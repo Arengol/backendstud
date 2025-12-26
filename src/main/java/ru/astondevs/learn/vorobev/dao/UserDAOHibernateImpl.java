@@ -16,7 +16,7 @@ public class UserDAOHibernateImpl implements UserDAO {
 
     @Override
     public Long save(@NonNull User user) {
-        Transaction transaction = null;
+        Transaction transaction;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             try {
@@ -61,7 +61,7 @@ public class UserDAOHibernateImpl implements UserDAO {
 
     @Override
     public void update(@NonNull User user) {
-        Transaction transaction = null;
+        Transaction transaction;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             try {
@@ -80,7 +80,7 @@ public class UserDAOHibernateImpl implements UserDAO {
 
     @Override
     public void delete(@NonNull Long id) {
-        Transaction transaction = null;
+        Transaction transaction;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             try {
