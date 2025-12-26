@@ -14,12 +14,23 @@ public class HibernateUtil {
     @Getter
     private static SessionFactory sessionFactory;
 
-    static {
+    public static void init(String url, String username, String password) {
         try {
-            StandardServiceRegistry standardRegistry = new StandardServiceRegistryBuilder()
-                    .configure("hibernate.cfg.xml")
-                    .build();
-
+            String configFile = System.getProperty("hibernate.config.file", "hibernate.cfg.xml");
+            StandardServiceRegistry standardRegistry;
+            if (url == null || username == null || password == null) {
+                 standardRegistry = new StandardServiceRegistryBuilder()
+                        .configure(configFile)
+                        .build();
+            }
+            else {
+                 standardRegistry = new StandardServiceRegistryBuilder()
+                        .configure(configFile)
+                        .applySetting("hibernate.connection.url", url)
+                        .applySetting("hibernate.connection.username", username)
+                        .applySetting("hibernate.connection.password", password)
+                        .build();
+            }
             Metadata metadata = new MetadataSources(standardRegistry)
                     .addAnnotatedClass(User.class)
                     .getMetadataBuilder()

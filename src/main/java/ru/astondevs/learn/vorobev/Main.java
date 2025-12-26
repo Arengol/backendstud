@@ -19,7 +19,7 @@ public class Main {
 
     public static void main(String[] args) {
         log.info("Запуск приложения");
-
+        HibernateUtil.init(null, null, null);
         try {
             UserDAO userDAO = new UserDAOHibernateImpl();
             userService = new UserServiceImpl(userDAO);
