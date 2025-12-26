@@ -78,14 +78,16 @@ public class UserDAOHibernateImpl implements UserDAO {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-            User user = session.find(User.class, id);
-            if (user != null) {
-                session.remove(user);
+            Query<?> query = session.createQuery("DELETE FROM User WHERE id = :id");
+            query.setParameter("id", id);
+            int deletedCount = query.executeUpdate();
+            transaction.commit();
+            if (deletedCount > 0) {
                 log.info("User удален по ID: {}", id);
             } else {
                 log.warn("User с ID {} не найден для удаления", id);
-            }
-            transaction.commit();
+                throw new IllegalArgumentException("Пользователь с ID " + id + " не найден");
+                }
         } catch (Exception e) {
             if (transaction != null) {
                 transaction.rollback();
