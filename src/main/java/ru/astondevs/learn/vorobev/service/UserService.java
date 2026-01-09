@@ -1,18 +1,15 @@
 package ru.astondevs.learn.vorobev.service;
 
-import ru.astondevs.learn.vorobev.entity.User;
+import ru.astondevs.learn.vorobev.dto.CreateUserRequest;
+import ru.astondevs.learn.vorobev.dto.UpdateUserRequest;
+import ru.astondevs.learn.vorobev.dto.UserResponse;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface UserService {
-    Long createUser(String name, String email, int age);
-
-    Optional<User> getUserById(Long id);
-
-    List<User> getAllUsers();
-
-    void updateUser(Long id, String name, String email, Integer age);
-
+    UserResponse createUser(CreateUserRequest request);
+    UserResponse getUserById(Long id);
+    List<UserResponse> getAllUsers();
+    UserResponse updateUser(Long id, UpdateUserRequest request);
     void deleteUser(Long id);
 }
