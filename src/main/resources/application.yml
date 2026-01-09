@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: learn-app
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/intensivedb
+    username: postgres
+    password: QRNzUsLdzU5TMAmwBHrF
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  sql:
+    init:
+      mode: always
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+logging:
+  level:
+    ru.astondevs.learn.vorobev: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
