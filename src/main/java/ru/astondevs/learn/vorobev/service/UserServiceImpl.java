@@ -1,13 +1,13 @@
 package ru.astondevs.learn.vorobev.service;
 
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import ru.astondevs.learn.vorobev.dao.UserDAO;
 import ru.astondevs.learn.vorobev.entity.User;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Scanner;
 
 @Slf4j
 public class UserServiceImpl implements UserService {
@@ -19,7 +19,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Long createUser(String name, String email, int age) {
+    public Long createUser(@NonNull String name, @NonNull String email, int age) {
         try {
             Optional<User> existingUser = userDAO.findByEmail(email);
             if (existingUser.isPresent()) {
@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<User> getUserById(Long id) {
+    public Optional<User> getUserById(@NonNull Long id) {
         try {
             Optional<User> user = userDAO.findById(id);
             if (user.isPresent()) {
@@ -67,7 +67,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateUser(Long id, String name, String email, Integer age) {
+    public void updateUser(@NonNull Long id, String name, String email, Integer age) {
         try {
             Optional<User> optionalUser = userDAO.findById(id);
             if (optionalUser.isEmpty()) {
@@ -113,7 +113,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUser(Long id) {
+    public void deleteUser(@NonNull Long id) {
         try {
             userDAO.delete(id);
             log.info("Удален user с ID: {}", id);

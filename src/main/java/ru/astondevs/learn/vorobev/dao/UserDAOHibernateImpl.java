@@ -1,6 +1,7 @@
 package ru.astondevs.learn.vorobev.dao;
 
 import jakarta.persistence.NoResultException;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import ru.astondevs.learn.vorobev.entity.User;
 import org.hibernate.Session;
@@ -14,25 +15,27 @@ import java.util.Optional;
 public class UserDAOHibernateImpl implements UserDAO {
 
     @Override
-    public Long save(User user) {
-        Transaction transaction = null;
+    public Long save(@NonNull User user) {
+        Transaction transaction;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-            session.persist(user);
-            transaction.commit();
-            log.info("User сохранен с ID: {}", user.getId());
-            return user.getId();
-        } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
+            try {
+                session.persist(user);
+                transaction.commit();
+                log.info("User сохранен с ID: {}", user.getId());
+                return user.getId();
+            } catch (Exception e) {
+                if (transaction != null) {
+                    transaction.rollback();
+                }
+                log.error("Ошибка сохранения user", e);
+                throw new RuntimeException("Ошибка сохранения user", e);
             }
-            log.error("Ошибка сохранения user", e);
-            throw new RuntimeException("Ошибка сохранения user", e);
         }
     }
 
     @Override
-    public Optional<User> findById(Long id) {
+    public Optional<User> findById(@NonNull Long id) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             User user = session.find(User.class, id);
             log.debug("User найден по ID {}: {}", id, user);
@@ -57,48 +60,55 @@ public class UserDAOHibernateImpl implements UserDAO {
     }
 
     @Override
-    public void update(User user) {
-        Transaction transaction = null;
+    public void update(@NonNull User user) {
+        Transaction transaction;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-            session.merge(user);
-            transaction.commit();
-            log.info("User обновлен: {}", user.getId());
-        } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            log.error("Ошибка обновления user: {}", user.getId(), e);
-            throw new RuntimeException("Ошибка обновления user", e);
-        }
-    }
-
-    @Override
-    public void delete(Long id) {
-        Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            transaction = session.beginTransaction();
-            Query<?> query = session.createQuery("DELETE FROM User WHERE id = :id");
-            query.setParameter("id", id);
-            int deletedCount = query.executeUpdate();
-            transaction.commit();
-            if (deletedCount > 0) {
-                log.info("User удален по ID: {}", id);
-            } else {
-                log.warn("User с ID {} не найден для удаления", id);
-                throw new IllegalArgumentException("Пользователь с ID " + id + " не найден");
+            try {
+                session.merge(user);
+                transaction.commit();
+                log.info("User обновлен: {}", user.getId());
+            } catch (Exception e) {
+                if (transaction != null) {
+                    transaction.rollback();
                 }
-        } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
+                log.error("Ошибка обновления user: {}", user.getId(), e);
+                throw new RuntimeException("Ошибка обновления user", e);
             }
-            log.error("Ошибка удаления user с ID: {}", id, e);
-            throw new RuntimeException("Ошибка удаления user", e);
         }
     }
 
     @Override
-    public Optional<User> findByEmail(String email) {
+    public void delete(@NonNull Long id) {
+        Transaction transaction;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            try {
+                Query<?> query = session.createQuery("DELETE FROM User WHERE id = :id");
+                query.setParameter("id", id);
+                int deletedCount = query.executeUpdate();
+                transaction.commit();
+                if (deletedCount > 0) {
+                    log.info("User удален по ID: {}", id);
+                } else {
+                    log.warn("User с ID {} не найден для удаления", id);
+                    throw new IllegalArgumentException("Пользователь с ID " + id + " не найден");
+                }
+            } catch (Exception e) {
+                if (e instanceof IllegalArgumentException) {
+                    throw e;
+                }
+                if (transaction != null) {
+                    transaction.rollback();
+                }
+                log.error("Ошибка удаления user с ID: {}", id, e);
+                throw new RuntimeException("Ошибка удаления user", e);
+            }
+        }
+    }
+
+    @Override
+    public Optional<User> findByEmail(@NonNull String email) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<User> query = session.createQuery(
                     "FROM User WHERE email = :email", User.class
