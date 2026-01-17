@@ -3,8 +3,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 import ru.astondevs.learn.vorobev.dto.CreateUserRequest;
 import ru.astondevs.learn.vorobev.dto.UpdateUserRequest;
+import ru.astondevs.learn.vorobev.dto.UserEvent;
 import ru.astondevs.learn.vorobev.dto.UserResponse;
 import ru.astondevs.learn.vorobev.entity.User;
 import ru.astondevs.learn.vorobev.exception.DuplicateEmailException;
@@ -28,6 +30,9 @@ class UserServiceImplUnitTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private KafkaTemplate<String, UserEvent> kafkaTemplate;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -250,28 +255,40 @@ class UserServiceImplUnitTest {
     @Test
     void deleteUser_ShouldDeleteSuccessfully() {
         // Arrange
-        when(userRepository.existsById(1L)).thenReturn(true);
-        doNothing().when(userRepository).deleteById(1L);
+        Long userId = 1L;
+        User user = User.builder()
+                .id(userId)
+                .name("Test User")
+                .email("test@example.com")
+                .age(25)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        doNothing().when(userRepository).deleteById(userId);
 
         // Act
-        userService.deleteUser(1L);
+        userService.deleteUser(userId);
 
         // Assert
-        verify(userRepository, times(1)).existsById(1L);
-        verify(userRepository, times(1)).deleteById(1L);
+        verify(userRepository, times(1)).findById(userId);
+        verify(userRepository, times(1)).deleteById(userId);
+        verify(kafkaTemplate, times(1)).send(anyString(), any(UserEvent.class));
     }
 
     @Test
     void deleteUser_ShouldThrowException_WhenUserNotFound() {
         // Arrange
-        when(userRepository.existsById(999L)).thenReturn(false);
+        Long userId = 999L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> userService.deleteUser(999L))
+        assertThatThrownBy(() -> userService.deleteUser(userId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("не найден");
 
-        verify(userRepository, times(1)).existsById(999L);
+        verify(userRepository, times(1)).findById(userId);
         verify(userRepository, never()).deleteById(anyLong());
+        verify(kafkaTemplate, never()).send(anyString(), any());
     }
 }
