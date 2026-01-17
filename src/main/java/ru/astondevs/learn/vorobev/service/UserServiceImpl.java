@@ -3,10 +3,12 @@ package ru.astondevs.learn.vorobev.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.astondevs.learn.vorobev.dto.CreateUserRequest;
 import ru.astondevs.learn.vorobev.dto.UpdateUserRequest;
+import ru.astondevs.learn.vorobev.dto.UserEvent;
 import ru.astondevs.learn.vorobev.dto.UserResponse;
 import ru.astondevs.learn.vorobev.entity.User;
 import ru.astondevs.learn.vorobev.repository.UserRepository;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final KafkaTemplate<String, UserEvent> kafkaTemplate;
+    private static final String TOPIC = "user-events";
 
     @Override
     public UserResponse createUser(CreateUserRequest request) {
@@ -40,6 +44,10 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
         log.info("Создан новый пользователь с ID: {}", savedUser.getId());
 
+        kafkaTemplate.send(TOPIC, new UserEvent(savedUser.getEmail(), "CREATE"));
+        log.info("Событие создания пользователя отправлено в Kafka для: {}", savedUser.getEmail());
+
+        log.info("Создан новый пользователь с ID: {}", savedUser.getId());
         return UserResponse.fromEntity(savedUser);
     }
 
@@ -104,11 +112,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Пользователь с ID " + id + " не найден");
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь с ID " + id + " не найден"));
 
         userRepository.deleteById(id);
+        kafkaTemplate.send(TOPIC, new UserEvent(user.getEmail(), "DELETE"));
+        log.info("Событие удаления пользователя отправлено в Kafka для: {}", user.getEmail());
         log.info("Пользователь с ID {} удален", id);
     }
 }
