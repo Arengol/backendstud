@@ -1,6 +1,7 @@
 package ru.astondevs.learn.vorobev.service;
 
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -30,6 +31,7 @@ public class UserServiceImpl implements UserService {
     private static final String TOPIC = "user-events";
 
     @Override
+    @CircuitBreaker(name = "userService", fallbackMethod = "createUserFallback")
     public UserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException("Пользователь с email " + request.getEmail() + " уже существует");
@@ -49,6 +51,13 @@ public class UserServiceImpl implements UserService {
 
         log.info("Создан новый пользователь с ID: {}", savedUser.getId());
         return UserResponse.fromEntity(savedUser);
+    }
+
+    public UserResponse createUserFallback(CreateUserRequest request, Throwable t) {
+        log.error("Kafka недоступна или произошла ошибка. Circuit Breaker активирован. Причина: {}", t.getMessage());
+        return userRepository.findByEmail(request.getEmail())
+                .map(UserResponse::fromEntity)
+                .orElseThrow(() -> new RuntimeException("Не удалось создать пользователя в режиме Fallback"));
     }
 
     @Override
